@@ -1,0 +1,31 @@
+{
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  },
+  "name": "si5c_kuis1_mikbalpratama",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikbalpratama/si5c_kuis1_mikbalpratama.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mikbalpratama/si5c_kuis1_mikbalpratama/issues"
+  },
+  "homepage": "https://github.com/mikbalpratama/si5c_kuis1_mikbalpratama#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
