@@ -2,7 +2,8 @@
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mongos": "^0.0.0"
   },
   "name": "si5c_kuis1_mikbalpratama",
   "version": "1.0.0",
