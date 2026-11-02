@@ -1,23 +1,21 @@
 const express = require("express");
-
 const router = express.Router();
 
-const controller = require("../controllers/serviceOrderController");
-const cekApiKey = require("../middlewares/cekApiKey");
+const serviceOrderController = require("../controllers/serviceOrderController");
 
-// GET semua data
-router.get("/", controller.getAll);
+// GET: Menampilkan semua pesanan servis
+router.get("/", serviceOrderController.getAllServiceOrders);
 
-// GET berdasarkan ID
-router.get("/:id", controller.getById);
+// GET: Menampilkan pesanan berdasarkan ID
+router.get("/:id", serviceOrderController.getServiceOrderById);
 
-// POST data baru
-router.post("/", cekApiKey, controller.create);
+// POST: Menambahkan pesanan servis
+router.post("/", serviceOrderController.createServiceOrder);
 
-// PUT data
-router.put("/:id", cekApiKey, controller.update);
+// PUT: Mengubah pesanan servis
+router.put("/:id", serviceOrderController.updateServiceOrder);
 
-// DELETE data
-router.delete("/:id", cekApiKey, controller.remove);
+// DELETE: Menghapus pesanan servis
+router.delete("/:id", serviceOrderController.deleteServiceOrder);
 
 module.exports = router;

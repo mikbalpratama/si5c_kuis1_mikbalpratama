@@ -2,12 +2,14 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose"); // tambahkan di antara require lainnya
+const mongoose = require("mongoose");
 
 const logger = require("./middlewares/logger");
 
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
 
+// Import routes
+const serviceRoutes = require("./routes/serviceRoutes");
 const serviceOrderRoutes = require("./routes/serviceOrderRoutes");
 
 const app = express();
@@ -33,9 +35,13 @@ app.get("/", (req, res) => {
     nim: process.env.NPM,
     topik: 23,
     endpoints: [
+      "GET /services",
+      "GET /services/:id",
+      "POST /services",
+      "PUT /services/:id",
+      "DELETE /services/:id",
       "GET /service-orders",
       "GET /service-orders/:id",
-      "GET /service-orders?status=antre",
       "POST /service-orders",
       "PUT /service-orders/:id",
       "DELETE /service-orders/:id",
@@ -43,20 +49,25 @@ app.get("/", (req, res) => {
   });
 });
 
-// Route service orders
+// Route jenis servis
+app.use("/services", serviceRoutes);
+
+// Route pesanan servis
 app.use("/service-orders", serviceOrderRoutes);
 
 // Error handler
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// Koneksi MongoDB
 mongoose
   .connect(process.env.DB_URI)
   .then(() => {
     console.log("Terhubung ke MongoDB");
-    app.listen(PORT, () =>
-      console.log(`Server berjalan di http://localhost:${PORT}`),
-    );
+
+    app.listen(PORT, () => {
+      console.log(`Server berjalan di http://localhost:${PORT}`);
+    });
   })
   .catch((err) => {
     console.error("Gagal terhubung:", err.message);

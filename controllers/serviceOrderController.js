@@ -1,125 +1,192 @@
-const serviceOrderModel = require("../models/serviceOrderModel");
+const ServiceOrder = require("../models/serviceOrderModel");
 
-function getAll(req, res, next) {
+// GET: Menampilkan pesanan servis
+// Dilengkapi filtering, pagination, sorting, projection, dan populate
+exports.getAllServiceOrders = async (req, res) => {
   try {
-    const { status } = req.query;
+    // FILTERING
+    const filter = {};
 
-    const data = serviceOrderModel.getAll(status);
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
 
-    res.json(data);
+    if (req.query.q) {
+      filter.$or = [
+        { platNomor: { $regex: req.query.q, $options: "i" } },
+        { namaPelanggan: { $regex: req.query.q, $options: "i" } },
+      ];
+    }
+
+    // PAGINATION
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
+    const skip = (page - 1) * limit;
+
+    // SORTING
+    const sort = {};
+    if (req.query.sort) {
+      const sortFields = req.query.sort.split(",");
+
+      sortFields.forEach((field) => {
+        const descending = field.startsWith("-");
+        const fieldName = descending ? field.substring(1) : field;
+
+        if (
+          [
+            "platNomor",
+            "namaPelanggan",
+            "biaya",
+            "status",
+            "createdAt",
+          ].includes(fieldName)
+        ) {
+          sort[fieldName] = descending ? -1 : 1;
+        }
+      });
+    } else {
+      sort.createdAt = -1;
+    }
+
+    // PROJECTION
+    const allowedFields = [
+      "platNomor",
+      "namaPelanggan",
+      "detailKendaraan",
+      "jenisServis",
+      "biaya",
+      "status",
+      "createdAt",
+      "updatedAt",
+    ];
+
+    let projection;
+    if (req.query.fields) {
+      const requestedFields = req.query.fields
+        .split(",")
+        .filter((field) => allowedFields.includes(field));
+
+      if (requestedFields.length > 0) {
+        projection = requestedFields.join(" ");
+      }
+    }
+
+    // QUERY DATABASE
+    const [orders, total] = await Promise.all([
+      ServiceOrder.find(filter)
+        .select(projection)
+        .populate("jenisServis")
+        .sort(sort)
+        .skip(skip)
+        .limit(limit),
+
+      ServiceOrder.countDocuments(filter),
+    ]);
+
+    res.status(200).json({
+      message: "Data pesanan servis berhasil ditampilkan",
+      pagination: {
+        totalData: total,
+        totalHalaman: Math.ceil(total / limit),
+        halamanSekarang: page,
+        limit: limit,
+      },
+      data: orders,
+    });
   } catch (error) {
-    next(error);
+    res.status(500).json({
+      message: error.message,
+    });
   }
-}
+};
 
-function getById(req, res, next) {
+// GET: Menampilkan pesanan berdasarkan ID
+exports.getServiceOrderById = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-
-    const order = serviceOrderModel.getById(id);
+    const order = await ServiceOrder.findById(req.params.id).populate(
+      "jenisServis",
+    );
 
     if (!order) {
       return res.status(404).json({
-        status: "error",
-        message: `Data dengan id ${id} tidak ditemukan`,
-        data: null,
+        message: "Pesanan servis tidak ditemukan",
       });
     }
 
-    res.json(order);
+    res.status(200).json({
+      data: order,
+    });
   } catch (error) {
-    next(error);
+    res.status(500).json({
+      message: error.message,
+    });
   }
-}
+};
 
-function create(req, res, next) {
+// POST: Menambahkan pesanan servis
+exports.createServiceOrder = async (req, res) => {
   try {
-    const pesan = serviceOrderModel.validate(req.body);
+    const order = await ServiceOrder.create(req.body);
 
-    if (pesan) {
-      return res.status(400).json({
-        status: "error",
-        message: pesan,
-        data: null,
-      });
-    }
-
-    const baru = serviceOrderModel.create(req.body);
+    const result = await order.populate("jenisServis");
 
     res.status(201).json({
-      status: "success",
-      message: "Data berhasil ditambahkan",
-      data: baru,
+      message: "Pesanan servis berhasil ditambahkan",
+      data: result,
     });
   } catch (error) {
-    next(error);
-  }
-}
-
-function update(req, res, next) {
-  try {
-    const id = parseInt(req.params.id);
-
-    const existingData = serviceOrderModel.getById(id);
-
-    if (!existingData) {
-      return res.status(404).json({
-        status: "error",
-        message: `Data dengan id ${id} tidak ditemukan`,
-        data: null,
-      });
-    }
-
-    const pesan = serviceOrderModel.validate(req.body);
-
-    if (pesan) {
-      return res.status(400).json({
-        status: "error",
-        message: pesan,
-        data: null,
-      });
-    }
-
-    const updated = serviceOrderModel.update(id, req.body);
-
-    res.status(200).json({
-      status: "success",
-      message: "Data berhasil diubah",
-      data: updated,
+    res.status(400).json({
+      message: error.message,
     });
-  } catch (error) {
-    next(error);
   }
-}
+};
 
-function remove(req, res, next) {
+// PUT: Mengubah pesanan servis
+exports.updateServiceOrder = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const order = await ServiceOrder.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).populate("jenisServis");
 
-    const deleted = serviceOrderModel.remove(id);
-
-    if (!deleted) {
+    if (!order) {
       return res.status(404).json({
-        status: "error",
-        message: `Data dengan id ${id} tidak ditemukan`,
-        data: null,
+        message: "Pesanan servis tidak ditemukan",
       });
     }
 
     res.status(200).json({
-      status: "success",
-      message: `Data order servis dengan id ${id} berhasil dihapus`,
-      data: null,
+      message: "Pesanan servis berhasil diperbarui",
+      data: order,
     });
   } catch (error) {
-    next(error);
+    res.status(400).json({
+      message: error.message,
+    });
   }
-}
+};
 
-module.exports = {
-  getAll,
-  getById,
-  create,
-  update,
-  remove,
+// DELETE: Menghapus pesanan servis
+exports.deleteServiceOrder = async (req, res) => {
+  try {
+    const order = await ServiceOrder.findByIdAndDelete(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Pesanan servis tidak ditemukan",
+      });
+    }
+
+    res.status(200).json({
+      message: "Pesanan servis berhasil dihapus",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
 };
